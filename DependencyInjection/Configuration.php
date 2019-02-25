@@ -17,8 +17,8 @@ class Configuration implements ConfigurationInterface
      */
     public function getConfigTreeBuilder()
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('tetranz_select2_entity');
+        $treeBuilder = new TreeBuilder('tetranz_select2_entity');
+        $rootNode = $treeBuilder->getRootNode();
 
         $rootNode
                 ->children()
