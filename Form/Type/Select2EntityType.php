@@ -46,8 +46,8 @@ class Select2EntityType extends AbstractType
         // custom object manager for this entity, override the default entity manager ?
         if(isset($options['object_manager'])) {
             $em = $options['object_manager'];
-            if(!$em instanceof ObjectManager) {
-                throw new \Exception('The entity manager \'em\' must be an ObjectManager instance');
+            if(!$em instanceof EntityManagerInterface) {
+                throw new \Exception('The entity manager \'em\' must be an EntityManagerInterface instance');
             }
             // Use the custom manager instead.
             $this->em = $em;
