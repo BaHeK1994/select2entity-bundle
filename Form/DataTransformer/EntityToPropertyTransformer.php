@@ -2,7 +2,7 @@
 
 namespace Tetranz\Select2EntityBundle\Form\DataTransformer;
 
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -17,7 +17,7 @@ use Symfony\Component\PropertyAccess\PropertyAccessor;
  */
 class EntityToPropertyTransformer implements DataTransformerInterface
 {
-    /** @var EntityManagerInterface */
+    /** @var ObjectManager */
     protected $em;
     /** @var  string */
     protected $className;
@@ -33,13 +33,13 @@ class EntityToPropertyTransformer implements DataTransformerInterface
     protected $accessor;
 
     /**
-     * @param EntityManagerInterface $em
+     * @param ObjectManager $em
      * @param string                 $class
      * @param string|null            $textProperty
      * @param string                 $primaryKey
      * @param string                 $newTagPrefix
      */
-    public function __construct(EntityManagerInterface $em, $class, $textProperty = null, $primaryKey = 'id', $newTagPrefix = '__', $newTagText = ' (NEW)')
+    public function __construct(ObjectManager $em, $class, $textProperty = null, $primaryKey = 'id', $newTagPrefix = '__', $newTagText = ' (NEW)')
     {
         $this->em = $em;
         $this->className = $class;
@@ -110,7 +110,7 @@ class EntityToPropertyTransformer implements DataTransformerInterface
                     ->getQuery()
                     ->getSingleResult();
             }
-            catch (\Exception $ex) {
+            catch (\Doctrine\ORM\UnexpectedResultException $ex) {
                 // this will happen if the form submits invalid data
                 throw new TransformationFailedException(sprintf('The choice "%s" does not exist or is not unique', $value));
             }

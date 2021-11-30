@@ -2,7 +2,7 @@
 
 namespace Tetranz\Select2EntityBundle\Form\DataTransformer;
 
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -16,7 +16,7 @@ use Symfony\Component\PropertyAccess\PropertyAccessor;
  */
 class EntitiesToPropertyTransformer implements DataTransformerInterface
 {
-    /** @var EntityManagerInterface */
+    /** @var ObjectManager */
     protected $em;
     /** @var  string */
     protected $className;
@@ -32,13 +32,13 @@ class EntitiesToPropertyTransformer implements DataTransformerInterface
     protected $accessor;
 
     /**
-     * @param EntityManagerInterface $em
+     * @param ObjectManager $em
      * @param string $class
      * @param string|null $textProperty
      * @param string $primaryKey
      * @param string $newTagPrefix
      */
-    public function __construct(EntityManagerInterface $em, $class, $textProperty = null, $primaryKey = 'id', $newTagPrefix = '__', $newTagText = ' (NEW)')
+    public function __construct(ObjectManager $em, $class, $textProperty = null, $primaryKey = 'id', $newTagPrefix = '__', $newTagText = ' (NEW)')
     {
         $this->em = $em;
         $this->className = $class;
@@ -107,19 +107,18 @@ class EntitiesToPropertyTransformer implements DataTransformerInterface
             }
         }
 
-        try {
-          // get multiple entities with one query
-          $entities = $this->em->createQueryBuilder()
-              ->select('entity')
-              ->from($this->className, 'entity')
-              ->where('entity.'.$this->primaryKey.' IN (:ids)')
-              ->setParameter('ids', $values)
-              ->getQuery()
-              ->getResult();
-        }
-        catch (\Exception $ex) {
+        // get multiple entities with one query
+        $entities = $this->em->createQueryBuilder()
+            ->select('entity')
+            ->from($this->className, 'entity')
+            ->where('entity.'.$this->primaryKey.' IN (:ids)')
+            ->setParameter('ids', $values)
+            ->getQuery()
+            ->getResult();
+
           // this will happen if the form submits invalid data
-          throw new TransformationFailedException('One or more id values are invalid');
+        if (count($entities) != count($values)) {
+            throw new TransformationFailedException('One or more id values are invalid');
         }
 
         return array_merge($entities, $newObjects);
