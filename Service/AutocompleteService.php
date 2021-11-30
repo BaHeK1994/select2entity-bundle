@@ -23,23 +23,24 @@ class AutocompleteService
 
     /**
      * @param FormFactoryInterface $formFactory
-     * @param ManagerRegistry      $doctrine
+     * @param ManagerRegistry $doctrine
      */
     public function __construct(FormFactoryInterface $formFactory, ManagerRegistry $doctrine)
     {
         $this->formFactory = $formFactory;
         $this->doctrine = $doctrine;
-    }   
+    }
 
     /**
-     * @param Request                  $request
-     * @param string|FormTypeInterface $type
-     *
+     * @param Request $request
+     * @param string $type
+     * @param null $data
+     * @param array $options
      * @return array
      */
-    public function getAutocompleteResults(Request $request, $type)
+    public function getAutocompleteResults(Request $request, string $type, $data = null, array $options = []): array
     {
-        $form = $this->formFactory->create($type);
+        $form = $this->formFactory->create($type, $data, $options);
         $fieldOptions = $form->get($request->get('field_name'))->getConfig()->getOptions();
 
         /** @var EntityRepository $repo */
@@ -50,26 +51,31 @@ class AutocompleteService
         $countQB = $repo->createQueryBuilder('e');
         $countQB
             ->select($countQB->expr()->count('e'))
-            ->where('e.'.$fieldOptions['property'].' LIKE :term')
-            ->setParameter('term', '%' . $term . '%')
-        ;
+            ->where('e.' . $fieldOptions['property'] . ' LIKE :term')
+            ->setParameter('term', '%' . $term . '%');
 
         $maxResults = $fieldOptions['page_limit'];
         $offset = ($request->get('page', 1) - 1) * $maxResults;
 
         $resultQb = $repo->createQueryBuilder('e');
         $resultQb
-            ->where('e.'.$fieldOptions['property'].' LIKE :term')
+            ->where('e.' . $fieldOptions['property'] . ' LIKE :term')
             ->setParameter('term', '%' . $term . '%')
             ->setMaxResults($maxResults)
-            ->setFirstResult($offset)
-        ;
+            ->setFirstResult($offset);
 
-        if (is_callable($fieldOptions['callback'])) {
-            $cb = $fieldOptions['callback'];
+        if (is_array($fieldOptions['callback']) || is_callable($fieldOptions['callback'])) {
+            if (is_array($fieldOptions['callback'])) {
+                $cb = $fieldOptions['callback']['cb'] ?? null;
+                $cbCount = $fieldOptions['callback']['cbCount'] ?? null;
+            } else {
+                $cb = $cbCount = $fieldOptions['callback'];
+            }
 
-            $cb($countQB, $request);
-            $cb($resultQb, $request);
+            if (is_callable($cb) && is_callable($cbCount)) {
+                $cbCount($countQB, $request);
+                $cb($resultQb, $request);
+            }
         }
 
         $count = $countQB->getQuery()->getSingleScalarResult();
@@ -80,7 +86,7 @@ class AutocompleteService
         $accessor = PropertyAccess::createPropertyAccessor();
 
         $result['results'] = array_map(function ($item) use ($accessor, $fieldOptions) {
-            return ['id' => $accessor->getValue($item, $fieldOptions['primary_key']), 'text' => $accessor->getValue($item, $fieldOptions['property'])];
+            return ['id' => $accessor->getValue($item, $fieldOptions['primary_key']), 'text' => $accessor->getValue($item, $fieldOptions['text_property'] ?? $fieldOptions['property'])];
         }, $paginationResults);
 
         return $result;
