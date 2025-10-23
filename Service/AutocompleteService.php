@@ -43,7 +43,7 @@ class AutocompleteService
     {
         $form = $this->formFactory->create($type, $data, $options);
 
-        $fieldName = $request->all()['field_name'] ?? '';
+        $fieldName = $request->query->all()['field_name'] ?? '';
         if (is_array($fieldName)) {
             $fieldName = '';
         }
@@ -68,7 +68,7 @@ class AutocompleteService
         /** @var EntityRepository $repo */
         $repo = $this->doctrine->getRepository($fieldOptions['class']);
 
-        $term = $request->all()['q'] ?? '';
+        $term = $request->query->all()['q'] ?? '';
         if (is_array($term)) {
             $term = '';
         }
