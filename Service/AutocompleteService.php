@@ -8,6 +8,7 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PropertyAccess\PropertyAccess;
+use Tetranz\Select2EntityBundle\Form\Type\Select2EntityType;
 
 class AutocompleteService
 {
@@ -41,12 +42,36 @@ class AutocompleteService
     public function getAutocompleteResults(Request $request, string $type, $data = null, array $options = []): array
     {
         $form = $this->formFactory->create($type, $data, $options);
-        $fieldOptions = $form->get($request->get('field_name'))->getConfig()->getOptions();
+
+        $fieldName = $request->all()['field_name'] ?? '';
+        if (is_array($fieldName)) {
+            $fieldName = '';
+        }
+
+        if (!$form->has($fieldName)) {
+            return ['results' => [], 'more' => false];
+        }
+
+        $formConfig = $form->get($request->get('field_name'))->getConfig();
+        $formType = $formConfig->getType()->getInnerType();
+
+        if (!$formType instanceof Select2EntityType) {
+            return ['results' => [], 'more' => false];
+        }
+
+        $fieldOptions = $formConfig->getOptions();
+
+        if (!isset($fieldOptions['class'])) {
+            return ['results' => [], 'more' => false];
+        }
 
         /** @var EntityRepository $repo */
         $repo = $this->doctrine->getRepository($fieldOptions['class']);
 
-        $term = $request->get('q');
+        $term = $request->all()['q'] ?? '';
+        if (is_array($term)) {
+            $term = '';
+        }
 
         $countQB = $repo->createQueryBuilder('e');
         $countQB
