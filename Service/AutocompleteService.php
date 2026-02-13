@@ -52,7 +52,7 @@ class AutocompleteService
             return ['results' => [], 'more' => false];
         }
 
-        $formConfig = $form->get($request->get('field_name'))->getConfig();
+        $formConfig = $form->get($request->query->get('field_name'))->getConfig();
         $formType = $formConfig->getType()->getInnerType();
 
         if (!$formType instanceof Select2EntityType) {
@@ -80,7 +80,7 @@ class AutocompleteService
             ->setParameter('term', '%' . $term . '%');
 
         $maxResults = $fieldOptions['page_limit'];
-        $offset = ($request->get('page', 1) - 1) * $maxResults;
+        $offset = ($request->query->get('page', 1) - 1) * $maxResults;
 
         $resultQb = $repo->createQueryBuilder('e');
         $resultQb
