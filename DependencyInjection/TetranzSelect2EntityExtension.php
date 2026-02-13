@@ -26,5 +26,13 @@ class TetranzSelect2EntityExtension extends Extension
 
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yaml');
+
+        if ($container->hasExtension('twig')) {
+            $container->prependExtensionConfig('twig', [
+                'form_themes' => [
+                    '@TetranzSelect2Entity/Form/fields.html.twig'
+                ]
+            ]);
+        }
     }
 }
